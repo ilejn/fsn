@@ -3,7 +3,7 @@
 
 use mysql::*;
 use mysql::prelude::*;
-use chrono::prelude::*; //For date and time
+// use chrono::prelude::*; //For date and time
 
 
 // use mysql::conn::MyOpts;
@@ -27,8 +27,24 @@ pub fn get_conn() -> Result<PooledConn> {
 		Ok(conn)
 }
 
-pub fn check_user() -> Result<u64> {
+pub fn check_user(name: &String, pwdhash: &String) -> u64 {
 		let mut  conn = get_conn().unwrap();
-		let res = conn.exec_first("select user_id from test.users where user_name=?;", ("vasya",)).unwrap();
-		Ok(res.unwrap())
+		let res :std::result::Result<std::option::Option<u64>, mysql::Error>;
+		res = conn.exec_first("select id from test.users where name=? and pwdhash=?;", (name, pwdhash));
+		match res {
+				Ok(id) =>
+						match id {
+								Some(id) => id,
+								None => 0,
+						}
+        Err(_error) => 0,
+		}
+		// Ok(res.unwrap())
+		// Ok(5)
+}
+
+pub fn add_user(name: &String, pwdhash: &String) -> Result<u64> {
+		let mut  conn = get_conn().unwrap();
+		conn.exec_drop("insert into test.users (name, pwdhash) values (?, ?);", (name, pwdhash)).unwrap();
+		Ok(conn.last_insert_id())
 }

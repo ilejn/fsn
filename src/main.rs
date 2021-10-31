@@ -1,4 +1,5 @@
 mod db;
+mod crypto;
 
 use serde::{Deserialize, Serialize};
 // use std::error;
@@ -52,22 +53,33 @@ async fn index() -> Result<HttpResponse> {
 #[derive(Serialize, Deserialize)]
 pub struct MyParams {
     name: String,
+		password: String
 }
 
 /// Simple handle POST request
 async fn handle_signup(params: web::Form<MyParams>) -> Result<HttpResponse> {
-		let ret = db::check_user().unwrap();
+		let hashed_password = crypto::mk_hash(&params.password);
+		let ret = db::add_user(&params.name, &hashed_password).unwrap();
     Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
-        "Your name is {:?} and your are a new user, check returned {}",
-        params.name, ret
+        "Your name is {:?}, password is {} and your are a new user, add returned {}",
+        params.name, params.password, ret
     )))
 }
 
 async fn handle_signin(params: web::Form<MyParams>) -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
-        "Your name is {} and your are a known user",
-        params.name
-    )))
+		let hashed_password = crypto::mk_hash(&params.password);
+		let ret = db::check_user(&params.name, &hashed_password);
+		if ret>0 {
+				Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
+						"Your name is {}, password is {} and your are a known user, check returned {}",
+						params.name, params.password, ret
+				)))
+		}
+		else {
+						Ok(HttpResponse::NotFound().content_type("text/plain").body(format!(
+								"User not found or password not matched",
+						)))
+		}
 }
 
 fn init() -> Result<(), fern::InitError> {
