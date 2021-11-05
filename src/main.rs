@@ -52,14 +52,26 @@ async fn index() -> Result<HttpResponse> {
 
 #[derive(Serialize, Deserialize)]
 pub struct MyParams {
-    name: String,
-		password: String
+    login: String,
+		password: String,
+		name: String,
+		surname: String,
+		birthday: String,
+		city: String,
+		hobby: String
 }
 
 /// Simple handle POST request
 async fn handle_signup(params: web::Form<MyParams>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
-		let ret = db::add_user(&params.name, &hashed_password).unwrap();
+		let ret = db::add_user(&params.login,
+													 &hashed_password,
+													 &params.name,
+													 &params.surname,
+													 &params.birthday,
+													 &params.city,
+													 &params.hobby
+		).unwrap();
     Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
         "Your name is {:?}, password is {} and your are a new user, add returned {}",
         params.name, params.password, ret
@@ -68,7 +80,7 @@ async fn handle_signup(params: web::Form<MyParams>) -> Result<HttpResponse> {
 
 async fn handle_signin(params: web::Form<MyParams>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
-		let ret = db::check_user(&params.name, &hashed_password);
+		let ret = db::check_user(&params.login, &hashed_password);
 		if ret>0 {
 				Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
 						"Your name is {}, password is {} and your are a known user, check returned {}",
@@ -83,7 +95,7 @@ async fn handle_signin(params: web::Form<MyParams>) -> Result<HttpResponse> {
 }
 
 fn init() -> Result<(), fern::InitError> {
-    let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "INFO".into());
+    let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "DEBUG".into());
     let log_level = log_level.parse().unwrap_or(log::LevelFilter::Info);
 
     let mut builder = fern::Dispatch::new()

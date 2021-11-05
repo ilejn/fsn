@@ -4,19 +4,80 @@
         <meta charset=utf-8>
         <title>Fictioanl Social Network</title>
     </head>
+		<script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.2/jquery.validate.min.js"></script>
+		<script type="text/javascript">
+			$.validator.addMethod("anyDate",
+			 											function(value, element) {
+			 													return value.match(/^(0?[1-9]|[12][0-9]|3[0-1])[/., -](0?[1-9]|1[0-2])[/., -](19|20)?\d{2}$/);
+			 											},
+			 											"Please enter a date in the format!"
+			 										 );
+		</script>
     <body>
         <h3>Welcome to FSN</h3>
-        <form method=POST>
+        <form method=POST action="/signin" id='userForm'>
+					  <div id="common">
             <label>
-                Name:
-                <input name="name">
+                Login:
+                <input name="login">
             </label>
             <label>
                 Password:
                 <input type="password" name="password">
             </label>
-            <button type=submit formaction=/signup>Sign up</button>
-            <button type=submit formaction=/signin>Sign in</button>
+						</div>
+					  <div class="newOnly">
+							<label>
+                Name:
+                <input name="name" class="newOnly" disabled>
+							</label>
+							<label>
+								Surname:
+                <input name="surname" class="newOnly" disabled>
+							</label>
+							<label>
+								Birthday:
+                <input name="birthday" class="newOnly" type="birthday" disabled>
+							</label>
+							<label>
+								Home city:
+                <input name="city" class="newOnly" disabled>
+							</label>
+						</div>
+					  <div class="newOnly">
+							<label>
+								Hobby:
+								<textarea rows="10" cols="45" name="hobby" class="newOnly" disabled></textarea>
+							</label>
+						</div>
+					  <div class="newOnly">
+							<label>
+								New user:
+								<input type="checkbox" id="newUser" />
+							</label>
+						</div>
+						<button id='submitButton' type=submit class="send">Submit</button>
         </form>
+				<script type="text/javascript">
+					$("#newUser").change( function(){
+							// alert("state changed");
+							if($(this).is(":checked")) {
+									$(".newOnly" ).prop('disabled', false);
+									$("#userForm" ).attr('action', '/signup');
+							}
+							else
+							{
+									$(".newOnly" ).prop('disabled', true);
+									$("#userForm" ).attr('action', '/signin');
+							}
+					});
+			 		$('#userForm').validate({
+			 				rules : {
+			 						password:  "required",
+									birthday: {anyDate : true}
+			 				}
+			 		})
+				</script>
     </body>
 </html>

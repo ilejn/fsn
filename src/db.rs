@@ -27,10 +27,10 @@ pub fn get_conn() -> Result<PooledConn> {
 		Ok(conn)
 }
 
-pub fn check_user(name: &String, pwdhash: &String) -> u64 {
+pub fn check_user(login: &String, pwdhash: &String) -> u64 {
 		let mut  conn = get_conn().unwrap();
 		let res :std::result::Result<std::option::Option<u64>, mysql::Error>;
-		res = conn.exec_first("select id from test.users where name=? and pwdhash=?;", (name, pwdhash));
+		res = conn.exec_first("select id from test.users where login=? and pwdhash=?;", (login, pwdhash));
 		match res {
 				Ok(id) =>
 						match id {
@@ -43,8 +43,22 @@ pub fn check_user(name: &String, pwdhash: &String) -> u64 {
 		// Ok(5)
 }
 
-pub fn add_user(name: &String, pwdhash: &String) -> Result<u64> {
+pub fn add_user(login: &String,
+								pwdhash: &String,
+								name: &String,
+								surname: &String,
+								birthday: &String,
+								city: &String,
+								hobby: &String
+) -> Result<u64> {
 		let mut  conn = get_conn().unwrap();
-		conn.exec_drop("insert into test.users (name, pwdhash) values (?, ?);", (name, pwdhash)).unwrap();
+		conn.exec_drop("insert into test.users (login, pwdhash, name, surname, birthday, city, hobby) values (?, ?, ?, ?, ?, ?, ?);", (login,
+																																						 pwdhash,
+																																						 name,
+																																						 surname,
+																																						 birthday,
+																																						 city,
+																																						 hobby
+		)).unwrap();
 		Ok(conn.last_insert_id())
 }

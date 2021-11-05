@@ -5,7 +5,7 @@ pub fn mk_hash(password: &String) -> String {
 		// let password = b"password";
 		let config = argon2::Config::default();
 		let hash = argon2::hash_encoded(password.as_bytes() , salt, &config).unwrap();
-
+    log::info!("hash {}", hash);
 		hash
 }
 
