@@ -54,7 +54,7 @@
 					  <div class="newOnly">
 							<label>
 								New user:
-								<input type="checkbox" id="newUser" />
+								<input type="checkbox" id="newUser" unchecked/>
 							</label>
 						</div>
 						<button id='submitButton' type=submit class="send">Submit</button>
@@ -75,9 +75,23 @@
 			 		$('#userForm').validate({
 			 				rules : {
 			 						password:  "required",
+			 						login:  "required",
 									birthday: {anyDate : true}
 			 				}
 			 		})
 				</script>
+        <form method=POST action="/lookup" id='lookupForm'>
+						<div>
+            <label>
+                Name prefix:
+                <input name="name">
+            </label>
+            <label>
+                Surname prefix:
+                <input name="surname">
+            </label>
+						</div>
+						<button>Submit</button>
+				</form>
     </body>
 </html>

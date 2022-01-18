@@ -39,6 +39,7 @@ fn app_config(config: &mut web::ServiceConfig) {
             //     foo: "bar".to_string(),
             // })
             .service(web::resource("/").route(web::get().to(index)))
+            .service(web::resource("/lookup").route(web::post().to(handle_lookup)))
             .service(web::resource("/signup").route(web::post().to(handle_signup)))
             .service(web::resource("/signin").route(web::post().to(handle_signin))),
     );
@@ -61,7 +62,24 @@ pub struct MyParams {
 		hobby: String
 }
 
-/// Simple handle POST request
+#[derive(Serialize, Deserialize)]
+pub struct LookupParams {
+		name: String,
+		surname: String,
+}
+
+
+async fn handle_lookup(params: web::Form<LookupParams>) -> Result<HttpResponse> {
+    log::debug!("top of handle_lookup");
+		log::debug!("{}, {}", &params.name, &params.surname);
+		let ret = db::lookup_user(&params.name,
+													 &params.surname
+		);
+    Ok(HttpResponse::Ok().content_type("text/plain").body(
+        ret
+    ))
+}
+
 async fn handle_signup(params: web::Form<MyParams>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
 		let ret = db::add_user(&params.login,
@@ -95,7 +113,7 @@ async fn handle_signin(params: web::Form<MyParams>) -> Result<HttpResponse> {
 }
 
 fn init() -> Result<(), fern::InitError> {
-    let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "DEBUG".into());
+    let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "TRACE".into());
     let log_level = log_level.parse().unwrap_or(log::LevelFilter::Info);
 
     let mut builder = fern::Dispatch::new()
