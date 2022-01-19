@@ -55,6 +55,7 @@ pub fn check_user(login: &String, pwdhash: &String) -> u64 {
 struct Person {
 		name: String,
 		surname: String,
+		id: u32
 }
 
 
@@ -67,18 +68,21 @@ pub fn lookup_user(name: &String,
 ) -> String {
 		let mut res: String = "".to_string();
 		let mut conn = get_conn().unwrap();
-		let retvec = conn.exec_map("select name, surname from extusers where name like ? and surname like ? limit 10000", (format!("{}%", name), format!("{}%", surname)),
-												|(name, surname)| Person {
+		let retvec = conn.exec_map("select name, surname, id from extusers where name like ? and surname like ? order by id limit 10000", (format!("{}%", name), format!("{}%", surname)),
+												|(name, surname, id)| Person {
 														name : name,
-														surname:surname
+														surname:surname,
+														id : id
         }
 		).unwrap();
 
 		for element in retvec.iter(){
-				println!("{}, {}", element.name, element.surname);
+				log::trace!("{}, {}, {}", element.name, element.surname, element.id);
 				res += &element.name;
 				res += ", ";
 				res += &element.surname;
+				res += ", ";
+				res += &element.id.to_string();
 				res += "\n";
 		}
 	res
