@@ -52,7 +52,7 @@ async fn index() -> Result<HttpResponse> {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct MyParams {
+pub struct UpParams {
     login: String,
 		password: String,
 		name: String,
@@ -60,6 +60,12 @@ pub struct MyParams {
 		birthday: String,
 		city: String,
 		hobby: String
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct InParams {
+    login: String,
+		password: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -80,7 +86,7 @@ async fn handle_lookup(params: web::Form<LookupParams>) -> Result<HttpResponse> 
     ))
 }
 
-async fn handle_signup(params: web::Form<MyParams>) -> Result<HttpResponse> {
+async fn handle_signup(params: web::Form<UpParams>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
 		let ret = db::add_user(&params.login,
 													 &hashed_password,
@@ -96,13 +102,13 @@ async fn handle_signup(params: web::Form<MyParams>) -> Result<HttpResponse> {
     )))
 }
 
-async fn handle_signin(params: web::Form<MyParams>) -> Result<HttpResponse> {
+async fn handle_signin(params: web::Form<InParams>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
 		let ret = db::check_user(&params.login, &hashed_password);
 		if ret>0 {
 				Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
-						"Your name is {}, password is {} and your are a known user, check returned {}",
-						params.name, params.password, ret
+						"your are a known user, check returned {}",
+						ret
 				)))
 		}
 		else {

@@ -22,6 +22,7 @@ services:
       - fsn-net
     environment:
       - "MYSQL=mysql://root:@haproxy:3306/test"
+      - "LOG_LEVEL=WARNING"
     expose:
       - 8080
   fsn2:
@@ -32,6 +33,7 @@ services:
       - fsn-net
     environment:
       - "MYSQL=mysql://root:@haproxy:3306/test"
+      - "LOG_LEVEL=WARNING"
     expose:
       - 8080
   fsn3:
@@ -42,6 +44,7 @@ services:
       - fsn-net
     environment:
       - "MYSQL=mysql://root:@haproxy:3306/test"
+      - "LOG_LEVEL=WARNING"
     expose:
       - 8080
   haproxy:
@@ -64,11 +67,11 @@ services:
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
       - CLUSTER_NAME=fsn-xtradb-cluster
-    ports:
-      - 3306:3306
-      - 4567:4567
-      - 4568:4568
-      - 4444:4444
+    # ports:
+    #   - 3306:3306
+    #   - 4567:4567
+    #   - 4568:4568
+    #   - 4444:4444
     expose:
       - 3306
       - 33060
@@ -101,7 +104,7 @@ services:
       - ./config:/etc/percona-xtradb-cluster.conf.d
       - ./cert:/cert
       - ./data-slave1:/var/lib/mysql
-    command: ["/bin/sh", "-c", "sleep 25; mysqld"]
+    command: ["/bin/sh", "-c", "sleep 20; mysqld"]
     networks:
       - fsn-net
   xtradb-slave2:
