@@ -27,84 +27,87 @@ pub fn get_conn() -> Result<PooledConn> {
 		Ok(conn)
 }
 
-pub fn check_user(login: &String, pwdhash: &String) -> u64 {
+pub fn get_user_by_session(session: &str) -> std::result::Result<u32, &'static str> {
 		let mut  conn = get_conn().unwrap();
-		let res :std::result::Result<std::option::Option<u64>, mysql::Error>;
-		res = conn.exec_first("select id from test.users where login=? and pwdhash=?;", (login, pwdhash));
 
 
-  // "select id from test.users where login=:login and pwdhash=:pwdhash",
-  // params!{
-	//  "login"=> login,
-	//	     "pwdhash"=> pwdhash
-  // })
-
+		// let res :std::result::Result<std::option::Option<i32>, mysql::Error>;
+		let res = conn.exec_first("select id from test.users where session=?;", (session, ));
 
 		match res {
 				Ok(id) =>
 						match id {
-								Some(id) => id,
-								None => 0,
+								Some(id) => Ok(id),
+								None => Err("Not found"),
 						}
-        Err(_error) => 0,
+        Err(_error) => Err("Some SQL error"),
 		}
-		// Ok(res.unwrap())
-		// Ok(5)
+
+
+		// let mut id = 0;
+
+		// row.unwrap().map(|(i)| {id = i;});
+
+		// id
 }
 
-struct Person {
-		name: String,
-		surname: String,
-		id: u32
+pub fn add_subscription(subscriber_id: u32, author_id: u32) {
+		let mut  conn = get_conn().unwrap();
+		conn.exec_drop("insert into test.subscriptions (subscriber_id, author_id) values (?, ?);",
+									 (subscriber_id,
+										author_id)).unwrap();
 }
 
-
-pub fn lookup_user(name: &String,
-									 surname: &String
-
-									 // https://mobiarch.wordpress.com/2020/06/02/access-mysql-from-rust-part-i/
-									 // https://docs.rs/mysql/latest/mysql/
-
-) -> String {
-		let mut res: String = "".to_string();
+pub fn get_subscriptions(subscriber_id: u32) -> std::result::Result<String, &'static str> {
 		let mut conn = get_conn().unwrap();
-		let retvec = conn.exec_map("select name, surname, id from extusers where name like ? and surname like ? order by id limit 10000", (format!("{}%", name), format!("{}%", surname)),
-												|(name, surname, id)| Person {
-														name : name,
-														surname:surname,
-														id : id
-        }
-		).unwrap();
-
-		for element in retvec.iter(){
-				log::trace!("{}, {}, {}", element.name, element.surname, element.id);
-				res += &element.name;
-				res += ", ";
-				res += &element.surname;
-				res += ", ";
-				res += &element.id.to_string();
-				res += "\n";
+		let retvec :std::result::Result<Vec<i32>, mysql::Error>;
+		retvec = conn.exec("select author_id from test.subscriptions where subscriber_id=?", (subscriber_id,));
+		match retvec {
+				Ok(vec) => {
+						let mut res_str: String = "".to_string();
+						for element in vec.iter() {
+								res_str += &element.to_string();
+								res_str += "\n";
+						}
+						Ok(res_str)
+				}
+				Err(_error) => Err("Some SQL error"),
 		}
-	res
 }
 
+pub fn check_user(login: &str, pwdhash: &str) -> (u64, String) {
+		let mut  conn = get_conn().unwrap();
+		// let res :std::result::Result<std::option::Option<u64>, mysql::Error>;
+		let row = conn.exec_first("select id, session from test.users where login=? and pwdhash=?;", (login, pwdhash));
 
-pub fn add_user(login: &String,
-								pwdhash: &String,
-								name: &String,
-								surname: &String,
-								birthday: &String,
-								city: &String,
-								hobby: &String
+		let mut id = 0;
+		let mut session = "".to_string();
+
+		row.unwrap().map(|(i, s)| {id = i; session = s;});
+
+		(id, session)
+
+}
+
+pub fn add_user(login: &str,
+								pwdhash: &str,
+								name: &str,
+								surname: &str,
+								birthday: &str,
+								city: &str,
+								hobby: &str,
+								session: &str
 ) -> Result<u64> {
 		let mut  conn = get_conn().unwrap();
-		conn.exec_drop("insert into test.users (login, pwdhash, name, surname, birthday, city, hobby) values (?, ?, ?, ?, ?, ?, ?);", (login,
-																																						 pwdhash,
-																																						 name,
-																																						 surname,
-																																						 birthday,
-																																						 city,
-																																						 hobby
+		conn.exec_drop("insert into test.users (login, pwdhash, name, surname, birthday, city, hobby, session) values (?, ?, ?, ?, ?, ?, ?, ?);",
+									 (login,
+										pwdhash,
+										name,
+										surname,
+										birthday,
+										city,
+										hobby,
+										session
 		)).unwrap();
 		Ok(conn.last_insert_id())
 }
