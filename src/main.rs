@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Result};
 use actix_session::{Session, CookieSession};
+use chrono::{NaiveDate, Utc};
 use std::env;
 
 // use crate::db;
@@ -86,7 +87,7 @@ async fn handle_subscribe(
 		session: actix_session::Session,
 		params: web::Form<SubsParams>) -> Result<HttpResponse> {
 
-		let mut session_str = "".to_string();
+		let session_str: String;
 
 		let s = session.get::<String>("session");
 		match s {
@@ -114,7 +115,6 @@ async fn handle_subscribe(
 
 				},
 		}
-
 }
 
 
@@ -123,11 +123,14 @@ async fn handle_signup(
 		params: web::Form<UpParams>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
 		let session_str = crypto::mk_random_string();
+		let birthday_date = NaiveDate::parse_from_str("&params.birthday", "%Y.%m.%d").unwrap_or(Utc::now().naive_utc().date());
+
 		let ret = db::add_user(&params.login,
 													 &hashed_password,
 													 &params.name,
 													 &params.surname,
-													 &params.birthday,
+													 // &params.birthday,
+													 &birthday_date.format("%Y-%m-%d").to_string(),
 													 &params.city,
 													 &params.hobby,
 													 &session_str
