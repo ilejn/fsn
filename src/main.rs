@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 // use thiserror::Error;
 
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Result};
-use actix_session::{Session, CookieSession};
+use actix_session::{CookieSession};
 use chrono::{NaiveDate, Utc};
 use std::env;
 
@@ -91,25 +91,27 @@ async fn handle_subscribe(
 
 		let s = session.get::<String>("session");
 		match s {
-				Ok(ss) => session_str = ss.unwrap(),
+				Ok(ss) => session_str = ss.unwrap_or_default(),
         Err(_error) => return Ok(HttpResponse::NotFound().content_type("text/plain").body(
 						"User not authorized"))
 
 		}
+
+    log::trace!("session_str {}", session_str);
 
 		let id_result = db::get_user_by_session(&session_str);
 		match id_result {
         Err(_error) => return Ok(HttpResponse::NotFound().content_type("text/plain").body(
 						"User not authorized")),
 				Ok(id) => {
-						db::add_subscription(id, params.id);
-						let subs = db::get_subscriptions(id);
+						let subs = db::add_subscription(id, params.id)
+								.and_then(|_s| {db::get_subscriptions(id)});
 
 						match subs {
 								Ok(ss) => Ok(HttpResponse::NotFound().content_type("text/plain").body(
 										format!("Subscribed to {}", ss))),
 								Err(_errpr) => Ok(HttpResponse::NotFound().content_type("text/plain").body(
-										"User not found or password not matched"))
+										"User to subscribe not found or password not matched"))
 
 						}
 
@@ -148,13 +150,13 @@ async fn handle_signin(
 		let hashed_password = crypto::mk_hash(&params.password);
 		let (ret, session_str) = db::check_user(&params.login, &hashed_password);
 		if ret>0 {
+				session.set("session", session_str)?;
 				Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
 						"your are a known user, check returned {}",
 						ret
 				)))
 		}
 		else {
-				session.set("session", session_str)?;
 				Ok(HttpResponse::NotFound().content_type("text/plain").body(
 						"User not found or password not matched"))
 		}

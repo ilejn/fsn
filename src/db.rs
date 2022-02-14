@@ -51,11 +51,16 @@ pub fn get_user_by_session(session: &str) -> std::result::Result<u32, &'static s
 		// id
 }
 
-pub fn add_subscription(subscriber_id: u32, author_id: u32) {
+pub fn add_subscription(subscriber_id: u32, author_id: u32) -> std::result::Result<(), &'static str>{
 		let mut  conn = get_conn().unwrap();
-		conn.exec_drop("insert into test.subscriptions (subscriber_id, author_id) values (?, ?);",
+		let ret :std::result::Result<(), mysql::Error>;
+		ret = conn.exec_drop("insert into test.subscriptions (subscriber_id, author_id) values (?, ?);",
 									 (subscriber_id,
-										author_id)).unwrap();
+										author_id));
+		match ret {
+				Ok(ok) => Ok(ok),
+				Err(_error) => Err("Some SQL error"),
+		}
 }
 
 pub fn get_subscriptions(subscriber_id: u32) -> std::result::Result<String, &'static str> {

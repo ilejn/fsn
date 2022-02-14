@@ -16,4 +16,6 @@ CREATE TABLE `subscriptions` (
   `subscriber_id` int NOT NULL,     -- one who is subscribed
 	`author_id` int NOT NULL,         -- one who creates messages
   PRIMARY KEY (`id`)
+	FOREIGN KEY (`author_id`)  REFERENCES `users` (`id`)
+	FOREIGN KEY (`subscriber_id`)  REFERENCES `users` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

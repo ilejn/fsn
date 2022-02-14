@@ -7,12 +7,16 @@
 		<script src="https://code.jquery.com/jquery-3.5.0.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.2/jquery.validate.min.js"></script>
 		<script type="text/javascript">
-			$.validator.addMethod("anyDate",
-			 											function(value, element) {
-			 													return value.match(/^(0?[1-9]|[12][0-9]|3[0-1])[/., -](0?[1-9]|1[0-2])[/., -](19|20)?\d{2}$/);
-			 											},
-			 											"Please enter a date in the format!"
-			 										 );
+			  $.validator.addMethod("anyDate",
+			 												function(value, element) {
+			 														return value.match(/^(0?[1-9]|[12][0-9]|3[0-1])[/., -](0?[1-9]|1[0-2])[/., -](19|20)?\d{2}$/);
+			 												},
+			 												"Please enter a date as MM.DD.YYYY!"
+			 											 );
+			  $(document).ready(function() {
+						$("#newUser").prop('checked', false);
+						$(".newOnly" ).prop('disabled', true);
+				});
 		</script>
     <body>
         <h3>Welcome to FSN</h3>
@@ -59,6 +63,15 @@
 						</div>
 						<button id='submitButton' type=submit class="send">Submit</button>
         </form>
+        <form method=POST action="/subscribe" id='subscribeForm'>
+						<div>
+            <label>
+                Subscribe to user:
+                <input name="id">
+            </label>
+						</div>
+						<button>Submit</button>
+				</form>
 				<script type="text/javascript">
 					$("#newUser").change( function(){
 							// alert("state changed");
@@ -80,14 +93,5 @@
 			 				}
 			 		})
 				</script>
-        <form method=POST action="/subscribe" id='subscribeForm'>
-						<div>
-            <label>
-                Subscribe to user:
-                <input name="id">
-            </label>
-						</div>
-						<button>Submit</button>
-				</form>
     </body>
 </html>
