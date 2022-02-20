@@ -1,7 +1,3 @@
-# [[bin]]
-# name = "loadpeople"
-# path = "src/tools/loadpeople.rs"
-
 [package]
 name = "fsn"
 version = "1.0.0"
@@ -27,6 +23,8 @@ mysql = "18.*"
 rust-argon2 = "0.8"
 csv = "1.1"
 rand = "*"
+tinytemplate = "*"
+json = "*"
 
 [dev-dependencies]
 actix-rt = "1"

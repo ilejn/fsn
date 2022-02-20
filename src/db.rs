@@ -4,6 +4,8 @@
 use std::env;
 use mysql::*;
 use mysql::prelude::*;
+use chrono::{NaiveDate, Utc};
+
 // use chrono::prelude::*; //For date and time
 
 
@@ -63,15 +65,32 @@ pub fn add_subscription(subscriber_id: u32, author_id: u32) -> std::result::Resu
 		}
 }
 
+struct Person {
+		id: u32,
+		name: String,
+		surname: String,
+}
+
+
 pub fn get_subscriptions(subscriber_id: u32) -> std::result::Result<String, &'static str> {
 		let mut conn = get_conn().unwrap();
-		let retvec :std::result::Result<Vec<i32>, mysql::Error>;
-		retvec = conn.exec("select author_id from test.subscriptions where subscriber_id=?", (subscriber_id,));
+		// let retvec :std::result::Result<Vec<i32>, mysql::Error>;
+		let retvec = conn.exec_map("select author_id, name, surname  from test.subscriptions, test.users where subscriber_id=? and test.users.id=authod_id", (subscriber_id,),
+													 |(author_id, name, surname)| Person {
+															 id : author_id,
+															 name : name,
+															 surname : surname
+													 }
+		);
 		match retvec {
 				Ok(vec) => {
 						let mut res_str: String = "".to_string();
 						for element in vec.iter() {
-								res_str += &element.to_string();
+								res_str += &element.id.to_string();
+								res_str += "  ";
+								res_str += &element.name;
+								res_str += "  ";
+								res_str += &element.surname;
 								res_str += "\n";
 						}
 						Ok(res_str)
@@ -79,6 +98,42 @@ pub fn get_subscriptions(subscriber_id: u32) -> std::result::Result<String, &'st
 				Err(_error) => Err("Some SQL error"),
 		}
 }
+
+struct ExtPerson {
+		id: u32,
+		name: String,
+		surname: String,
+		city: String,
+		birthday: NaiveDate,
+		hobby: String,
+}
+
+pub fn lookup_users(name: &String,
+									 surname: &String
+
+									 // https://mobiarch.wordpress.com/2020/06/02/access-mysql-from-rust-part-i/
+									 // https://docs.rs/mysql/latest/mysql/
+
+) -> std::result::Result<String, &'static str> {
+		let mut conn = get_conn().unwrap();
+		let retvec = conn.exec_map("select id, name, surname, city, birthday, hobby from extusers where name like ? and surname like ? order by id limit 10000", (format!("{}%", name), format!("{}%", surname)),
+												|(id, name, surname, city, birthday, hobby)| ExtPerson {
+														id, name, surname, city, birthday, hobby
+        }
+		);
+
+		match retvec {
+				Ok(vec) => {
+						let mut res_str: String = "".to_string();
+						for element in vec.iter(){
+								res_str += &format!("{}, {}, {}, {}, {}, {}\n", element.name, element.surname, element.id, element.city, element.birthday, element.hobby);
+						}
+						Ok(res_str)
+				}
+				Err(_error) => Err("Some SQL error"),
+		}
+}
+
 
 pub fn check_user(login: &str, pwdhash: &str) -> (u64, String) {
 		let mut  conn = get_conn().unwrap();
@@ -115,4 +170,15 @@ pub fn add_user(login: &str,
 										session
 		)).unwrap();
 		Ok(conn.last_insert_id())
+}
+
+pub fn set_perspage(user_id: u32, pers_page: &String
+) -> Result<u64> {
+		let mut  conn = get_conn().unwrap();
+		conn.exec_drop("upsert into test.perspages (user_id, pers_page) values (?, ?);",
+									 (user_id,
+										pers_page
+	  )).unwrap();
+		Ok(conn.last_insert_id())
+
 }

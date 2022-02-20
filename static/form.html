@@ -16,6 +16,7 @@
 			  $(document).ready(function() {
 						$("#newUser").prop('checked', false);
 						$(".newOnly" ).prop('disabled', true);
+						$(".oldOnly" ).prop('disabled', false);
 				});
 		</script>
     <body>
@@ -63,7 +64,8 @@
 						</div>
 						<button id='submitButton' type=submit class="send">Submit</button>
         </form>
-        <form method=POST action="/subscribe" id='subscribeForm'>
+				<div class="oldOnly">
+					<form method=POST action="/subscribe" id='subscribeForm'>
 						<div>
             <label>
                 Subscribe to user:
@@ -71,17 +73,39 @@
             </label>
 						</div>
 						<button>Submit</button>
-				</form>
+					</form>
+					<form method=POST action="/show_subscriptions" id='subscribeShowForm'>
+						<button>Show subscriptions</button>
+					</form>
+					<form method=POST action="/lookup" id='lookupForm'>
+						<div>
+            <label>
+                Lookup Name prefix:
+                <input name="name">
+            </label>
+            <label>
+                Surname prefix:
+                <input name="surname">
+            </label>
+						</div>
+						<button>Lookup</button>
+					</form>
+					<div>
+						<a href="/perspage">Maintain personal page</a>
+					</div>
+				</div>
 				<script type="text/javascript">
 					$("#newUser").change( function(){
 							// alert("state changed");
 							if($(this).is(":checked")) {
 									$(".newOnly" ).prop('disabled', false);
+									$(".oldOnly" ).prop('disabled', true);
 									$("#userForm" ).attr('action', '/signup');
 							}
 							else
 							{
 									$(".newOnly" ).prop('disabled', true);
+									$(".oldOnly" ).prop('disabled', false);
 									$("#userForm" ).attr('action', '/signin');
 							}
 					});
