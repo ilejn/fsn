@@ -52,8 +52,8 @@ fn app_config(config: &mut web::ServiceConfig) {
             .service(web::resource("/subscribe").route(web::post().to(handle_subscribe)))
             .service(web::resource("/show_subscriptions").route(web::post().to(handle_show_subscriptions)))
             .service(web::resource("/lookup").route(web::post().to(handle_lookup)))
-            .service(web::resource("/perspage").route(web::get().to(show_perspage)))
-            .service(web::resource("/perspage").route(web::post().to(handle_perspage)))
+            .service(web::resource("/perspage").route(web::get().to(show_perspage)).route(web::post().to(handle_perspage)))
+            // .service(web::resource("/perspage").route(web::post().to(handle_perspage)))
     );
 }
 
@@ -258,14 +258,38 @@ async fn show_perspage(
 		session: actix_session::Session,
 		tmpl: web::Data<TinyTemplate<'_>>
 ) -> Result<HttpResponse> {
-    let ctx = json!({
-        "name" : &"some name",
-        "surname" : &"some surname",
-				"perspage" : &"some perspage"
-    });
-    let s = tmpl.render("../template/perspage.html", &ctx).unwrap();
-        // .map_err(|_| error::ErrorInternalServerError("Template error"));
-    Ok(HttpResponse::Ok().content_type("text/html; charset=utf-8").body(s))
+
+
+		let session_str: String;
+
+		let s = session.get::<String>("session");
+		match s {
+				Ok(ss) => session_str = ss.unwrap_or_default(),
+        Err(_error) => return Ok(HttpResponse::NotFound().content_type("text/plain").body(
+						"User not authorized"))
+		}
+
+    log::trace!("session_str {}", session_str);
+
+		let id_result = db::get_user_by_session(&session_str);
+		match id_result {
+        Err(_error) => return Ok(HttpResponse::NotFound().content_type("text/plain").body(
+						"User not authorized")),
+				Ok(id) => {
+						let ext_person = db::get_user(id).unwrap_or_default();
+						let ctx = json!({
+								"name" : &ext_person.name,
+								"surname" : &ext_person.surname,
+								"perspage" : &ext_person.perspage
+						});
+						let s = tmpl.render("../template/perspage.html", &ctx).unwrap();
+						// .map_err(|_| error::ErrorInternalServerError("Template error"));
+						Ok(HttpResponse::Ok().content_type("text/html; charset=utf-8").body(s))
+				}
+		}
+
+
+
 }
 
 

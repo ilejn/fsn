@@ -1,24 +1,14 @@
 // use std::default::Default;
 // use mysql::*;
+use serde::{Deserialize, Serialize};
 
 use std::env;
 use mysql::*;
 use mysql::prelude::*;
-use chrono::{NaiveDate, Utc};
-
-// use chrono::prelude::*; //For date and time
-
-
-// use mysql::conn::MyOpts;
-// use mysql::conn::pool::MyPool;
-// use mysql::value::from_value;
+use chrono::NaiveDate;
+use derivative::Derivative;
 
 pub fn get_conn() -> Result<PooledConn> {
-    // let opts = MyOpts {
-    //       user: Some("root".to_string()),
-    //       pass: Some("password".to_string()),
-    //       ..Default::default()
-    // };
 
     let url = env::var("MYSQL").unwrap_or_else(|_| "mysql://ilejn:@localhost:3306/test".into());
 
@@ -32,8 +22,6 @@ pub fn get_conn() -> Result<PooledConn> {
 pub fn get_user_by_session(session: &str) -> std::result::Result<u32, &'static str> {
 		let mut  conn = get_conn().unwrap();
 
-
-		// let res :std::result::Result<std::option::Option<i32>, mysql::Error>;
 		let res = conn.exec_first("select id from test.users where session=?;", (session, ));
 
 		match res {
@@ -45,12 +33,6 @@ pub fn get_user_by_session(session: &str) -> std::result::Result<u32, &'static s
         Err(_error) => Err("Some SQL error"),
 		}
 
-
-		// let mut id = 0;
-
-		// row.unwrap().map(|(i)| {id = i;});
-
-		// id
 }
 
 pub fn add_subscription(subscriber_id: u32, author_id: u32) -> std::result::Result<(), &'static str>{
@@ -99,14 +81,43 @@ pub fn get_subscriptions(subscriber_id: u32) -> std::result::Result<String, &'st
 		}
 }
 
-struct ExtPerson {
-		id: u32,
-		name: String,
-		surname: String,
-		city: String,
-		birthday: NaiveDate,
-		hobby: String,
+#[derive(Serialize, Deserialize, Derivative)]
+#[derivative(Default)]
+pub struct ExtPerson {
+		pub id: u32,
+		pub name: String,
+		pub surname: String,
+		pub city: String,
+    #[derivative(Default(value = "NaiveDate::from_ymd(2021, 1, 1)"))]
+		pub birthday: NaiveDate,
+		pub hobby: String,
+		pub perspage: String
 }
+
+pub fn get_user(id: u32) -> std::result::Result<ExtPerson, &'static str> {
+		let mut conn = get_conn().unwrap();
+		let res = conn.exec_first("select id, name, surname, city, birthday, hobby, perspage  from test.users, test.perspages where perspages.user_id=users.id and id=?", (id,));
+
+		let ret = res.map(|row| {
+				row.map(|(id, name, surname, city, birthday, hobby, perspage)| ExtPerson {
+						id,
+						name,
+						surname,
+						city,
+						birthday,
+						hobby,
+						perspage
+				})
+		});
+		match ret {
+				Ok(r) => match r {
+						Some(n) => Ok(n),
+						None => Err("Not found"),
+				}
+				Err(_error) => Err("Some SQL error")
+		}
+}
+
 
 pub fn lookup_users(name: &String,
 									 surname: &String
@@ -116,9 +127,15 @@ pub fn lookup_users(name: &String,
 
 ) -> std::result::Result<String, &'static str> {
 		let mut conn = get_conn().unwrap();
-		let retvec = conn.exec_map("select id, name, surname, city, birthday, hobby from extusers where name like ? and surname like ? order by id limit 10000", (format!("{}%", name), format!("{}%", surname)),
+		let retvec = conn.exec_map("select id, name, surname, city, birthday, hobby from users where name like ? and surname like ? order by id limit 10000", (format!("{}%", name), format!("{}%", surname)),
 												|(id, name, surname, city, birthday, hobby)| ExtPerson {
-														id, name, surname, city, birthday, hobby
+														id,
+														name,
+														surname,
+														city,
+														birthday,
+														hobby,
+														perspage : "".to_string()
         }
 		);
 
@@ -175,7 +192,7 @@ pub fn add_user(login: &str,
 pub fn set_perspage(user_id: u32, pers_page: &String
 ) -> Result<u64> {
 		let mut  conn = get_conn().unwrap();
-		conn.exec_drop("upsert into test.perspages (user_id, pers_page) values (?, ?);",
+		conn.exec_drop("replace into test.perspages (user_id, pers_page) values (?, ?);",
 									 (user_id,
 										pers_page
 	  )).unwrap();

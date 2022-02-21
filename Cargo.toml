@@ -25,6 +25,7 @@ csv = "1.1"
 rand = "*"
 tinytemplate = "*"
 json = "*"
+derivative = "*"
 
 [dev-dependencies]
 actix-rt = "1"
