@@ -57,7 +57,7 @@ struct Person {
 pub fn get_subscriptions(subscriber_id: u32) -> std::result::Result<String, &'static str> {
 		let mut conn = get_conn().unwrap();
 		// let retvec :std::result::Result<Vec<i32>, mysql::Error>;
-		let retvec = conn.exec_map("select author_id, name, surname  from test.subscriptions, test.users where subscriber_id=? and test.users.id=authod_id", (subscriber_id,),
+		let retvec = conn.exec_map("select author_id, coalesce(name,''), coalesce(surname,'')  from test.subscriptions, test.users where subscriber_id=? and test.users.id=author_id", (subscriber_id,),
 													 |(author_id, name, surname)| Person {
 															 id : author_id,
 															 name : name,
@@ -91,22 +91,22 @@ pub struct ExtPerson {
     #[derivative(Default(value = "NaiveDate::from_ymd(2021, 1, 1)"))]
 		pub birthday: NaiveDate,
 		pub hobby: String,
-		pub perspage: String
+		pub pers_page: String
 }
 
 pub fn get_user(id: u32) -> std::result::Result<ExtPerson, &'static str> {
 		let mut conn = get_conn().unwrap();
-		let res = conn.exec_first("select id, name, surname, city, birthday, hobby, perspage  from test.users, test.perspages where perspages.user_id=users.id and id=?", (id,));
+		let res = conn.exec_first("select users.id, coalesce(name,''), coalesce(surname,''), coalesce(city,''), birthday, coalesce(hobby,''), coalesce(pers_page,'')  from test.users left join test.perspages on perspages.user_id=users.id where  test.users.id=?", (id,));
 
 		let ret = res.map(|row| {
-				row.map(|(id, name, surname, city, birthday, hobby, perspage)| ExtPerson {
+				row.map(|(id, name, surname, city, birthday, hobby, pers_page)| ExtPerson {
 						id,
 						name,
 						surname,
 						city,
 						birthday,
 						hobby,
-						perspage
+						pers_page
 				})
 		});
 		match ret {
@@ -121,10 +121,6 @@ pub fn get_user(id: u32) -> std::result::Result<ExtPerson, &'static str> {
 
 pub fn lookup_users(name: &String,
 									 surname: &String
-
-									 // https://mobiarch.wordpress.com/2020/06/02/access-mysql-from-rust-part-i/
-									 // https://docs.rs/mysql/latest/mysql/
-
 ) -> std::result::Result<String, &'static str> {
 		let mut conn = get_conn().unwrap();
 		let retvec = conn.exec_map("select id, name, surname, city, birthday, hobby from users where name like ? and surname like ? order by id limit 10000", (format!("{}%", name), format!("{}%", surname)),
@@ -135,7 +131,7 @@ pub fn lookup_users(name: &String,
 														city,
 														birthday,
 														hobby,
-														perspage : "".to_string()
+														pers_page : "".to_string()
         }
 		);
 
@@ -191,6 +187,7 @@ pub fn add_user(login: &str,
 
 pub fn set_perspage(user_id: u32, pers_page: &String
 ) -> Result<u64> {
+    log::trace!("pers_page content {}", pers_page);
 		let mut  conn = get_conn().unwrap();
 		conn.exec_drop("replace into test.perspages (user_id, pers_page) values (?, ?);",
 									 (user_id,

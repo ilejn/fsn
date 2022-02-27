@@ -28,6 +28,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let mut tt = TinyTemplate::new();
         tt.add_template("../template/perspage.html", include_str!("../templates/perspage.html")).unwrap();
+        tt.add_template("../template/form.html", include_str!("../templates/form.html")).unwrap();
+        tt.add_template("../template/gohome.html", include_str!("../templates/gohome.html")).unwrap();
         App::new()
             .data(tt)
             .wrap(middleware::Logger::default())
@@ -57,10 +59,31 @@ fn app_config(config: &mut web::ServiceConfig) {
     );
 }
 
-async fn index() -> Result<HttpResponse> {
+async fn index(
+		session: actix_session::Session,
+		tmpl: web::Data<TinyTemplate<'_>>
+) -> Result<HttpResponse> {
+		let mut greet = "Unregistered user".to_string();
+		let s = session.get::<String>("session");
+		if s.is_ok() {
+				let id = db::get_user_by_session(&s.unwrap().unwrap());
+				if id.is_ok() {
+						let ext_person = db::get_user(id.unwrap());
+						if ext_person.is_ok() {
+								let ext_person_str = ext_person.unwrap();
+								greet = format!("{} {}!", &ext_person_str.name, &ext_person_str.surname);
+						}
+				}
+
+		}
+
+		let ctx = json!({
+				"user_hello" : greet
+		});
+		let s = tmpl.render("../template/form.html", &ctx).unwrap();
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body(include_str!("../static/form.html")))
+        .body(s))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -181,7 +204,8 @@ async fn handle_lookup(params: web::Form<LookupParams>) -> Result<HttpResponse> 
 
 async fn handle_signup(
 		session: actix_session::Session,
-		params: web::Form<UpParams>) -> Result<HttpResponse> {
+		params: web::Form<UpParams>,
+		tmpl: web::Data<TinyTemplate<'_>>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
 		let session_str = crypto::mk_random_string();
 		let birthday_date = NaiveDate::parse_from_str("&params.birthday", "%Y.%m.%d").unwrap_or(Utc::now().naive_utc().date());
@@ -197,27 +221,33 @@ async fn handle_signup(
 													 &session_str
 		).unwrap();
 		session.set("session", session_str)?;
-    Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
-        "Your name is {:?}, password is {} and your are a new user, add returned {}",
-        params.name, params.password, ret
-    )))
+		let ctx = json!({
+				"message" : format!("Your name is {:?}, password is {} and your are a new user, add returned {}",  params.name, params.password, ret)
+		});
+		let s = tmpl.render("../template/gohome.html", &ctx).unwrap();
+    Ok(HttpResponse::Ok().content_type("text/html; charset=utf-8").body(s))
 }
 
 async fn handle_signin(
 		session: actix_session::Session,
-		params: web::Form<InParams>) -> Result<HttpResponse> {
+		params: web::Form<InParams>,
+    tmpl: web::Data<TinyTemplate<'_>>) -> Result<HttpResponse> {
 		let hashed_password = crypto::mk_hash(&params.password);
 		let (ret, session_str) = db::check_user(&params.login, &hashed_password);
 		if ret>0 {
 				session.set("session", session_str)?;
-				Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
-						"your are a known user, check returned {}",
-						ret
-				)))
+				let ctx = json!({
+						"message" : format!("your are a known user, check returned {}", ret)
+				});
+				let s = tmpl.render("../template/gohome.html", &ctx).unwrap();
+				Ok(HttpResponse::Ok().content_type("text/html; charset=utf-8").body(s))
 		}
 		else {
-				Ok(HttpResponse::NotFound().content_type("text/plain").body(
-						"User not found or password not matched"))
+				let ctx = json!({
+						"message" : "User not found or password not matched"
+				});
+				let s = tmpl.render("../template/gohome.html", &ctx).unwrap();
+				Ok(HttpResponse::NotFound().content_type("text/html; charset=utf-8").body(s))
 		}
 }
 
@@ -277,12 +307,15 @@ async fn show_perspage(
 						"User not authorized")),
 				Ok(id) => {
 						let ext_person = db::get_user(id).unwrap_or_default();
+						log::trace!("perspage from db {}", ext_person.pers_page);
+
 						let ctx = json!({
 								"name" : &ext_person.name,
 								"surname" : &ext_person.surname,
-								"perspage" : &ext_person.perspage
+								"perspage" : &ext_person.pers_page
 						});
 						let s = tmpl.render("../template/perspage.html", &ctx).unwrap();
+						log::trace!("instantiated template {}", s);
 						// .map_err(|_| error::ErrorInternalServerError("Template error"));
 						Ok(HttpResponse::Ok().content_type("text/html; charset=utf-8").body(s))
 				}
