@@ -1,4 +1,7 @@
-CREATE TABLE `users` (
+CREATE DATABASE IF NOT EXISTS test;
+use test
+
+CREATE TABLE IF NOT EXISTS `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `login` varchar(20) DEFAULT NULL,
   `pwdhash` char(87) DEFAULT NULL,
@@ -7,11 +10,11 @@ CREATE TABLE `users` (
   `hobby` varchar(300) DEFAULT NULL,
   `birthday` date DEFAULT NULL,
   `name` varchar(100) DEFAULT NULL,
-	`session` varchar(30) DEFAULT NULL,
+	`session` varchar(87) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE `subscriptions` (
+CREATE TABLE IF NOT EXISTS `subscriptions` (
   `id` int NOT NULL AUTO_INCREMENT, -- subscription ID
   `subscriber_id` int NOT NULL,     -- one who is subscribed
 	`author_id` int NOT NULL,         -- one who creates messages
@@ -20,7 +23,7 @@ CREATE TABLE `subscriptions` (
 	FOREIGN KEY (`subscriber_id`)  REFERENCES `users` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE `perspages` (
+CREATE TABLE IF NOT EXISTS `perspages` (
   `id` int NOT NULL AUTO_INCREMENT, -- pers page ID
 	`user_id` int NOT NULL,
 	pers_page varchar(1024),

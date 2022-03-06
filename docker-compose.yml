@@ -1,17 +1,6 @@
 version: '3.7'
 services:
-  nginx:
-    image: nginx:1.21
-    container_name: nginx-lb
-    restart: on-failure
-    networks:
-      - fsn-net
-    volumes:
-      - "./nginx_default.conf:/etc/nginx/conf.d/default.conf"
-    ports:
-      - "4088:80"
-      - "4098:8080"
-  fsn1:
+  fsn2:
     build:
       context: .
       dockerfile: Dockerfile
@@ -21,112 +10,23 @@ services:
     networks:
       - fsn-net
     environment:
-      - "MYSQL=mysql://root:@haproxy:3306/test"
+      - "MYSQL=mysql://root@mysql:3306/test"
       - "LOG_LEVEL=WARNING"
-    expose:
-      - 8080
-  fsn2:
-    image: fsn
-    container_name: fsn2
-    restart: on-failure
-    networks:
-      - fsn-net
-    environment:
-      - "MYSQL=mysql://root:@haproxy:3306/test"
-      - "LOG_LEVEL=WARNING"
-    expose:
-      - 8080
-  fsn3:
-    image: fsn
-    container_name: fsn3
-    restart: on-failure
-    networks:
-      - fsn-net
-    environment:
-      - "MYSQL=mysql://root:@haproxy:3306/test"
-      - "LOG_LEVEL=WARNING"
-    expose:
-      - 8080
-  haproxy:
-    container_name: haproxy
-    image: haproxy
     ports:
-      - "13306:3306"
-    volumes:
-      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
-    networks:
-      - fsn-net
+      - "8080:8080"
     depends_on:
-      - xtradb-master
-      - xtradb-slave1
-      - xtradb-slave2
+      - mysql
 
-  xtradb-master:
-    container_name: xtradb-master
-    image: 'percona/percona-xtradb-cluster:8.0'
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=1
-      - CLUSTER_NAME=fsn-xtradb-cluster
-    # ports:
-    #   - 3306:3306
-    #   - 4567:4567
-    #   - 4568:4568
-    #   - 4444:4444
+  mysql:
+    image: mysql:8
     expose:
       - 3306
-      - 33060
-      - 4567
-      - 4568
-      - 4444
     volumes:
-      - ./config:/etc/percona-xtradb-cluster.conf.d
-      - ./cert:/cert
       - ./data-master:/var/lib/mysql
+      - ./db.sql:/docker-entrypoint-initdb.d/1.sql:ro
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
     restart: always
-    networks:
-      - fsn-net
-  xtradb-slave1:
-    container_name: xtradb-slave1
-    depends_on:
-      - xtradb-master
-    image: 'percona/percona-xtradb-cluster:8.0'
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=1
-      - CLUSTER_NAME=fsn-xtradb-cluster
-      - CLUSTER_JOIN=xtradb-master
-    expose:
-      - 3306
-      - 33060
-      - 4567
-      - 4568
-      - 4444
-    volumes:
-      - ./config:/etc/percona-xtradb-cluster.conf.d
-      - ./cert:/cert
-      - ./data-slave1:/var/lib/mysql
-    command: ["/bin/sh", "-c", "sleep 20; mysqld"]
-    networks:
-      - fsn-net
-  xtradb-slave2:
-    container_name: xtradb-slave2
-    depends_on:
-      - xtradb-master
-    image: 'percona/percona-xtradb-cluster:8.0'
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=1
-      - CLUSTER_NAME=fsn-xtradb-cluster
-      - CLUSTER_JOIN=xtradb-master
-    expose:
-      - 3306
-      - 33060
-      - 4567
-      - 4568
-      - 4444
-    volumes:
-      - ./config:/etc/percona-xtradb-cluster.conf.d
-      - ./cert:/cert
-      - ./data-slave2:/var/lib/mysql
-    command: ["/bin/sh", "-c", "sleep 25; mysqld"]
     networks:
       - fsn-net
 networks:
