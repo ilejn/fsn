@@ -66,12 +66,15 @@ async fn index(
 		let mut greet = "Unregistered user".to_string();
 		let s = session.get::<String>("session");
 		if s.is_ok() {
-				let id = db::get_user_by_session(&s.unwrap().unwrap());
-				if id.is_ok() {
-						let ext_person = db::get_user(id.unwrap());
-						if ext_person.is_ok() {
-								let ext_person_str = ext_person.unwrap();
-								greet = format!("{} {}!", &ext_person_str.name, &ext_person_str.surname);
+				let sess = s.unwrap();
+				if sess.is_some() {
+						let id = db::get_user_by_session(&sess.unwrap());
+						if id.is_ok() {
+								let ext_person = db::get_user(id.unwrap());
+								if ext_person.is_ok() {
+										let ext_person_str = ext_person.unwrap();
+										greet = format!("{} {}!", &ext_person_str.name, &ext_person_str.surname);
+								}
 						}
 				}
 
